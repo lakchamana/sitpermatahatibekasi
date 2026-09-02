@@ -1,16 +1,22 @@
 FROM php:8.2-apache
 
-# Install extension PHP yang dibutuhkan project
+
 RUN docker-php-ext-install \
+    mysqli \
     pdo \
-    pdo_mysql \
-    mysqli
+    pdo_mysql
 
-# Copy semua source code ke Apache
-COPY . /var/www/html/
 
-# Permission folder
+WORKDIR /var/www/html
+
+
+COPY . .
+
+
 RUN chown -R www-data:www-data /var/www/html
 
-# Port Apache
+
+RUN a2enmod rewrite
+
+
 EXPOSE 80
