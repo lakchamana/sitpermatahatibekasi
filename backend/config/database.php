@@ -1,233 +1,243 @@
 <?php
 
 /**
- * Konfigurasi Database
- * 
+ * Database Configuration
+ *
  * Support:
- * 1. Local Development (XAMPP) menggunakan .env
- * 2. Railway Deployment menggunakan Environment Variables
+ * - Local XAMPP (.env)
+ * - Railway Environment Variables
  */
+
 
 date_default_timezone_set('Asia/Jakarta');
 
 
+
 /**
- * Load .env jika tersedia (LOCAL DEVELOPMENT)
+ * Load .env untuk local development
  */
 $envPath = __DIR__ . '/../../.env';
 
+
 if (file_exists($envPath)) {
+
 
     $lines = file(
         $envPath,
         FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES
     );
 
+
     foreach ($lines as $line) {
+
 
         if (strpos(trim($line), '#') === 0) {
             continue;
         }
 
-        if (!strpos($line, '=')) {
+
+        if (!str_contains($line, '=')) {
             continue;
         }
 
-        list($name, $value) = explode('=', $line, 2);
+
+        [$name, $value] = explode('=', $line, 2);
+
 
         $name = trim($name);
+
 
         $value = trim(
             $value,
             " \t\n\r\0\x0B\"'"
         );
 
+
         if (!defined($name)) {
+
             define($name, $value);
+
         }
+
     }
+
 }
+
 
 
 /**
- * Database Configuration
+ * Database Config
  *
- * Prioritas:
- * 1. Railway Environment Variable
- * 2. .env Local
- * 3. Default XAMPP
+ * Priority:
+ * 1. Railway Variables
+ * 2. .env
+ * 3. Local Default
  */
 
 
-if (!defined('DB_HOST')) {
-
-    define(
-        'DB_HOST',
-        getenv('MYSQL_HOST')
-            ?: (defined('DB_HOST') ? DB_HOST : 'localhost')
-    );
-}
+define(
+    'DB_HOST',
+    getenv('MYSQLHOST')
+        ?: (defined('DB_HOST') ? DB_HOST : 'localhost')
+);
 
 
-if (!defined('DB_PORT')) {
-
-    define(
-        'DB_PORT',
-        getenv('MYSQL_PORT')
-            ?: (defined('DB_PORT') ? DB_PORT : '3306')
-    );
-}
+define(
+    'DB_PORT',
+    getenv('MYSQLPORT')
+        ?: (defined('DB_PORT') ? DB_PORT : '3306')
+);
 
 
-if (!defined('DB_USER')) {
-
-    define(
-        'DB_USER',
-        getenv('MYSQL_USER')
-            ?: (defined('DB_USER') ? DB_USER : 'root')
-    );
-}
+define(
+    'DB_USER',
+    getenv('MYSQLUSER')
+        ?: (defined('DB_USER') ? DB_USER : 'root')
+);
 
 
-if (!defined('DB_PASS')) {
-
-    define(
-        'DB_PASS',
-        getenv('MYSQL_PASSWORD')
-            ?: (defined('DB_PASS') ? DB_PASS : '')
-    );
-}
+define(
+    'DB_PASS',
+    getenv('MYSQLPASSWORD')
+        ?: (defined('DB_PASS') ? DB_PASS : '')
+);
 
 
-if (!defined('DB_NAME')) {
+define(
+    'DB_NAME',
+    getenv('MYSQLDATABASE')
+        ?: (defined('DB_NAME') ? DB_NAME : 'school_website')
+);
 
-    define(
-        'DB_NAME',
-        getenv('MYSQL_DATABASE')
-            ?: (defined('DB_NAME') ? DB_NAME : 'school_website')
-    );
-}
 
 
 
 /**
  * Application Base Path
  */
+
 if (!defined('APP_BASE_PATH')) {
 
-    $projectRoot = realpath(dirname(__DIR__, 2))
+
+    $projectRoot =
+        realpath(dirname(__DIR__, 2))
         ?: dirname(__DIR__, 2);
 
 
-    $documentRoot = isset($_SERVER['DOCUMENT_ROOT'])
-        ? (realpath((string) $_SERVER['DOCUMENT_ROOT']) ?: '')
+    $documentRoot =
+        isset($_SERVER['DOCUMENT_ROOT'])
+        ? realpath($_SERVER['DOCUMENT_ROOT'])
         : '';
 
 
-    $basePath = '/' . basename($projectRoot);
+    $basePath =
+        '/' . basename($projectRoot);
 
 
-    if ($documentRoot !== '') {
 
-        $normalizedProject =
-            str_replace('\\', '/', $projectRoot);
+    if ($documentRoot) {
 
 
-        $normalizedDocument =
+        $project =
+            str_replace(
+                '\\',
+                '/',
+                $projectRoot
+            );
+
+
+        $document =
             rtrim(
-                str_replace('\\', '/', $documentRoot),
+                str_replace(
+                    '\\',
+                    '/',
+                    $documentRoot
+                ),
                 '/'
             );
 
 
-        if (stripos($normalizedProject, $normalizedDocument) === 0) {
+        if (stripos($project, $document) === 0) {
 
-            $relativeProject =
+
+            $relative =
                 trim(
                     substr(
-                        $normalizedProject,
-                        strlen($normalizedDocument)
+                        $project,
+                        strlen($document)
                     ),
                     '/'
                 );
 
 
             $basePath =
-                $relativeProject === ''
-                ? ''
-                : '/' . $relativeProject;
+                $relative
+                ? '/' . $relative
+                : '';
+
         }
+
     }
 
 
     define(
         'APP_BASE_PATH',
-        rtrim($basePath, '/')
+        rtrim($basePath,'/')
     );
+
 }
+
 
 
 
 /**
  * Site URL
  */
+
 if (!defined('SITE_URL')) {
 
 
-    $isSecure =
+    $https =
         (!empty($_SERVER['HTTPS'])
-            && $_SERVER['HTTPS'] !== 'off')
-
+        && $_SERVER['HTTPS'] !== 'off')
         ||
-
-        strtolower(
-            (string)
-            ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')
-        ) === 'https';
-
-
-
-    $scheme =
-        $isSecure
-        ? 'https'
-        : 'http';
-
-
-
-    $host =
-        $_SERVER['HTTP_HOST']
-        ?? 'localhost';
-
+        ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 
 
     define(
         'SITE_URL',
-        $scheme .
-            '://' .
-            $host .
-            APP_BASE_PATH
+        ($https ? 'https' : 'http')
+        . '://'
+        . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+        . APP_BASE_PATH
     );
+
 }
+
 
 
 
 /**
  * Cookie Path
  */
+
 if (!defined('APP_COOKIE_PATH')) {
+
 
     define(
         'APP_COOKIE_PATH',
         APP_BASE_PATH === ''
-            ? '/'
-            : APP_BASE_PATH . '/'
+        ? '/'
+        : APP_BASE_PATH . '/'
     );
+
 }
 
 
 
+
 /**
- * Database Connection PDO
+ * PDO Connection
  */
 
 try {
@@ -236,12 +246,13 @@ try {
     $pdo = new PDO(
 
         "mysql:host=" . DB_HOST .
-            ";port=" . DB_PORT .
-            ";dbname=" . DB_NAME .
-            ";charset=utf8mb4",
+        ";port=" . DB_PORT .
+        ";dbname=" . DB_NAME .
+        ";charset=utf8mb4",
 
 
         DB_USER,
+
 
         DB_PASS,
 
@@ -249,30 +260,52 @@ try {
         [
 
             PDO::ATTR_ERRMODE =>
-            PDO::ERRMODE_EXCEPTION,
+                PDO::ERRMODE_EXCEPTION,
 
 
             PDO::ATTR_DEFAULT_FETCH_MODE =>
-            PDO::FETCH_ASSOC,
+                PDO::FETCH_ASSOC,
 
 
             PDO::ATTR_EMULATE_PREPARES =>
-            false,
+                false
 
         ]
 
     );
+
+
 } catch (PDOException $e) {
 
 
-    die('Koneksi database gagal. Silakan periksa konfigurasi database.');
+    die(
+        "Database Error: "
+        . $e->getMessage()
+    );
+
 }
 
 
 
-/**
- * Pastikan schema publik tersedia
- */
-require_once __DIR__ . '/../migrations/public_schema.php';
 
-ensure_public_schema($pdo);
+/**
+ * Migration
+ */
+
+$migration =
+    __DIR__ . '/../migrations/public_schema.php';
+
+
+if (file_exists($migration)) {
+
+
+    require_once $migration;
+
+
+    if (function_exists('ensure_public_schema')) {
+
+        ensure_public_schema($pdo);
+
+    }
+
+}
